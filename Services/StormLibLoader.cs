@@ -169,6 +169,7 @@ namespace HDTextureManager.Services
                 }
             }
             catch (Exception)
+            {
             }
         }
 
