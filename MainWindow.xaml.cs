@@ -852,7 +852,12 @@ namespace HDTextureManager
             }
 
             var missingDeps = module.Dependencies
-                .Where(d => !_modules.Any(m => m.Id == d && m.IsInstalled))
+                .Where(d => {
+                    // PATCH-U 需要 PATCH-T 的 Ultra Base 变体
+                    if (module.Id == "PATCH-U" && d == "PATCH-T")
+                        return !_modules.Any(m => m.Id == "PATCH-T" && m.Variant == "Ultra Base" && m.IsInstalled);
+                    return !_modules.Any(m => m.Id == d && m.IsInstalled);
+                })
                 .ToList();
 
             if (missingDeps.Any())
@@ -865,7 +870,12 @@ namespace HDTextureManager
                 {
                     foreach (var dep in missingDeps)
                     {
-                        var depModule = _modules.FirstOrDefault(m => m.Id == dep);
+                        PatchModule depModule;
+                        // PATCH-U 依赖 PATCH-T 时，优先下载 Ultra Base 变体
+                        if (module.Id == "PATCH-U" && dep == "PATCH-T")
+                            depModule = _modules.FirstOrDefault(m => m.Id == "PATCH-T" && m.Variant == "Ultra Base");
+                        else
+                            depModule = _modules.FirstOrDefault(m => m.Id == dep);
                         if (depModule != null)
                             await DownloadModule(depModule);
                     }
@@ -1079,6 +1089,15 @@ namespace HDTextureManager
             
             foreach (var depId in module.Dependencies)
             {
+                // PATCH-U 需要 PATCH-T 的 Ultra Base 变体
+                if (module.Id == "PATCH-U" && depId == "PATCH-T")
+                {
+                    var hasUltraBase = _modules.Any(m => m.Id == "PATCH-T" && m.Variant == "Ultra Base" && m.IsInstalled);
+                    if (!hasUltraBase)
+                        missing.Add("PATCH-T (Ultra Base)");
+                    continue;
+                }
+
                 // 检查是否有任何变体已安装
                 var hasInstalledVariant = _modules.Any(m => m.Id == depId && m.IsInstalled);
                 if (!hasInstalledVariant)
@@ -1104,9 +1123,20 @@ namespace HDTextureManager
             
             foreach (var depId in module.Dependencies)
             {
-                // 找到已安装的依赖模块（任意变体，优先找未禁用的）
-                var depModule = _modules.FirstOrDefault(m => m.Id == depId && m.IsInstalled && !m.IsDisabled)
-                    ?? _modules.FirstOrDefault(m => m.Id == depId && m.IsInstalled);
+                PatchModule depModule;
+                
+                // PATCH-U 需要 PATCH-T 的 Ultra Base 变体
+                if (module.Id == "PATCH-U" && depId == "PATCH-T")
+                {
+                    depModule = _modules.FirstOrDefault(m => m.Id == "PATCH-T" && m.Variant == "Ultra Base" && m.IsInstalled && !m.IsDisabled)
+                        ?? _modules.FirstOrDefault(m => m.Id == "PATCH-T" && m.Variant == "Ultra Base" && m.IsInstalled);
+                }
+                else
+                {
+                    // 找到已安装的依赖模块（任意变体，优先找未禁用的）
+                    depModule = _modules.FirstOrDefault(m => m.Id == depId && m.IsInstalled && !m.IsDisabled)
+                        ?? _modules.FirstOrDefault(m => m.Id == depId && m.IsInstalled);
+                }
                 
                 // 如果找不到或依赖已启用，跳过
                 if (depModule == null || !depModule.IsDisabled) continue;
@@ -1427,7 +1457,7 @@ namespace HDTextureManager
         {
             try
             {
-                Process.Start("https://projectreforged.github.io/downloads/index.html");
+                Process.Start("https://projectreforged.github.io/downloads/turtle/");
                 StatusText.Text = T("Status_WebOpened");
             }
             catch (Exception ex)

@@ -19,7 +19,7 @@ namespace HDTextureManager.Services
     public class HtmlParser
     {
         private readonly HttpClient _httpClient;
-        private static readonly string Url = "https://projectreforged.github.io/downloads/index.html";
+        private static readonly string Url = "https://projectreforged.github.io/downloads/turtle/";
 
         public HtmlParser(HttpClient httpClient)
         {
@@ -52,6 +52,8 @@ namespace HDTextureManager.Services
                     category = "Optional";
                 else if (categoryText.Contains("Audio"))
                     category = "Audio";  // Audio 作为独立分类
+                else if (categoryText.Contains("HD Tier"))
+                    category = "Ultra";  // HD Tier 与 Ultra Tier 都归类到超高清材质
                 else
                     continue;  // 跳过 Dependencies 等其他部分
 
@@ -278,6 +280,8 @@ namespace HDTextureManager.Services
                 else if (variantName.IndexOf("Regular", StringComparison.OrdinalIgnoreCase) >= 0 || 
                          variantName.IndexOf("Standard", StringComparison.OrdinalIgnoreCase) >= 0)
                     variantName = "Standard";
+                else if (variantName.IndexOf("Ultra Base", StringComparison.OrdinalIgnoreCase) >= 0)
+                    variantName = "Ultra Base";
                 else
                 {
                     // 无法识别的变体名称，跳过
@@ -349,6 +353,11 @@ namespace HDTextureManager.Services
                         module.Dependencies.Add("PATCH-C");
                         module.Dependencies.Add("PATCH-S");
                         break;
+                    case "PATCH-T":
+                        // T 依赖 A + G
+                        module.Dependencies.Add("PATCH-A");
+                        module.Dependencies.Add("PATCH-G");
+                        break;
                     case "PATCH-B":
                     case "PATCH-D":
                     case "PATCH-E":
@@ -362,9 +371,10 @@ namespace HDTextureManager.Services
                         module.Dependencies.Add("PATCH-A");
                         break;
                     case "PATCH-U":
-                        // U 依赖 A + G
+                        // U 依赖 A + G + T (Ultra Base)
                         module.Dependencies.Add("PATCH-A");
                         module.Dependencies.Add("PATCH-G");
+                        module.Dependencies.Add("PATCH-T");
                         break;
                 }
                 
